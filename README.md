@@ -1,3 +1,3 @@
 # dataMiningProject
 
-Mi proyecto
+Mi proyecto de mineria
