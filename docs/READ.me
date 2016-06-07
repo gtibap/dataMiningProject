@@ -1,0 +1,15 @@
+Feature detection using SIFT
+
+
+Taken and modified from:
+http://docs.opencv.org/2.4/doc/tutorials/features2d/feature_detection/feature_detection.html
+
+
+To compile:
+cd src/cpp
+g++ feature_detection.cpp -o../../bin/feat `pkg-config --cflags --libs opencv`
+
+
+Tu use: 
+cd bin
+./feat <img1> <hessian1> <hessian2>
