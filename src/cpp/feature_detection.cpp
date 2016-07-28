@@ -33,7 +33,8 @@ int main( int argc, char** argv )
 
 
   SurfFeatureDetector detector1( minHessian1 );
-  SurfFeatureDetector detector2( minHessian2 );
+//  SurfFeatureDetector detector2( minHessian2 );
+  SiftFeatureDetector detector2(;
 
   std::vector<KeyPoint> keypoints_1, keypoints_2;
 

@@ -1,27 +1,142 @@
+import scipy
+import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib import animation
-
-# First set up the figure, the axis, and the plot element we want to animate
-fig = plt.figure()
-ax = plt.axes(xlim=(0, 2), ylim=(-2, 2))
-line, = ax.plot([1], [1], 'ro') #, lw=2
-
-# initialization function: plot the background of each frame
-def init():
-    line.set_data([], [])
-    return line,
-
-# animation function.  This is called sequentially
-def animate(t):
-    #x = np.linspace(0, 2, 1000)
-    x = 1 + 0.8*np.sin(2 * np.pi * (0.01 * t))
-    y = 0 + 1*np.sin(2 * np.pi * (0.01 * t))
-    line.set_data(x, y)
-    return line,
-
-# call the animator.  blit=True means only re-draw the parts that have changed.
-anim = animation.FuncAnimation(fig, animate, init_func=init, frames=200, interval=30, blit=True)
+import pymc
+import math
 
 
+#Sine parameters
+
+true_intercept=5
+true_slope=1.74
+extra_par=0.08
+true_err=0.3
+size=50
+
+
+'''
+#Lineal parameters
+true_intercept=5
+true_slope=1.74
+extra_par=0.08
+true_err=6.2
+size=50
+'''
+
+'''
+true_intercept=105
+true_slope=1.74
+extra_par=0.08
+true_err=10.2
+size=50
+'''
+
+t = np.array(range(0,size))
+true_regression_line = true_intercept + true_slope * np.sin(t*extra_par*math.pi)
+print "Max: ",np.max(true_regression_line)
+#true_regression_line = true_intercept - true_slope * t**2
+y = true_regression_line + np.random.normal(scale=true_err, size=size)
+#y = [min(p, 6) for p in y]
+#y = true_regression_line
+
+
+'''
+# *************************************
+#      Bayesian Linear Regression
+# *************************************
+
+b0 = pymc.Normal("b0", 0, 0.0003)
+b1 = pymc.Normal("b1", 0, 0.0003)
+err = pymc.Uniform("err", 0, 500)
+
+x_weight = pymc.Normal("weight", 0, 1, value=t, observed=True)
+
+@pymc.deterministic
+def pred(b0=b0, b1=b1, x=t):
+    return b0 + b1*x
+
+y_pred = pymc.Normal("y", pred, err, value=y, observed=True)
+
+model = pymc.Model([pred, b0, b1, y_pred, err, x_weight])
+
+
+mcmc = pymc.MCMC(model)
+mcmc.sample(50000, 20000)
+
+print "b0: ",np.mean(mcmc.trace('b0')[:]),"b1: ",np.mean(mcmc.trace('b1')[:]),"err: ",np.mean(mcmc.trace('err')[:])
+
+b0 = np.mean(mcmc.trace('b0')[:])
+b1 = np.mean(mcmc.trace('b1')[:])
+
+plt.scatter(t,y)
+plt.plot(t, [b0 + p*b1 for p in t])
 plt.show()
+
+
+''
+# *************************************
+#      Bayesian Polinomial Regression (Quadratic)
+# *************************************
+b0 = pymc.Normal("b0", 0, 0.0003)
+b1 = pymc.Normal("b1", 0, 0.0003)
+b2 = pymc.Normal("b2", 0, 0.0003)
+err = pymc.Uniform("err", 0, 500)
+
+x_weight = pymc.Normal("weight", 0, 1, value=t, observed=True)
+
+@pymc.deterministic
+def pred(b0=b0, b1=b1, b2=b2, x=x_weight):
+    return b0 + b1*x + b2*x*x
+
+y_pred = pymc.Normal("y", pred, err, value=y, observed=True)
+
+model = pymc.Model([pred, b0, b1, b2, y_pred, err, x_weight])
+
+
+mcmc = pymc.MCMC(model)
+mcmc.sample(50000, 20000)
+
+print "b0: ",np.mean(mcmc.trace('b0')[:]),"b1: ",np.mean(mcmc.trace('b1')[:]),"b2: ",np.mean(mcmc.trace('b2')[:]),"err: ",np.mean(mcmc.trace('err')[:])
+
+b0 = np.mean(mcmc.trace('b0')[:])
+b1 = np.mean(mcmc.trace('b1')[:])
+b2 = np.mean(mcmc.trace('b2')[:])
+
+plt.scatter(t,y)
+plt.plot(t, [b0 + p*b1 + p*p*b2 for p in t])
+plt.show()
+'''
+
+# *************************************
+#      Bayesian Sinusoidal Regression 
+# *************************************
+b0 = pymc.Normal("b0", 0, 0.0003)
+b1 = pymc.Normal("b1", 0, 0.0003)
+b2 = pymc.Normal("b2", 0, 0.0003)
+err = pymc.Uniform("err", 0, 500)
+
+time = pymc.Normal("weight", 0, 1, value=t, observed=True)
+
+@pymc.deterministic
+def pred(b0=b0, b1=b1, b2=b2, t=time):
+    return b0 + b1*np.sin(t * b2)
+
+y_pred = pymc.Normal("y", pred, err, value=y, observed=True)
+
+model = pymc.Model([pred, b0, b1, b2, y_pred, err, time])
+
+
+mcmc = pymc.MCMC(model)
+mcmc.sample(50000, 20000)
+
+print "b0: ",np.mean(mcmc.trace('b0')[:]),"b1: ",np.mean(mcmc.trace('b1')[:]),"b2: ",np.mean(mcmc.trace('b2')[:]),"err: ",np.mean(mcmc.trace('err')[:])
+
+b0 = np.mean(mcmc.trace('b0')[:])
+b1 = np.mean(mcmc.trace('b1')[:])
+b2 = np.mean(mcmc.trace('b2')[:])
+
+plt.scatter(t,y)
+plt.plot(t, [b0 + b1*np.sin(p*b2) for p in t])
+plt.show()
+#'''
+
